@@ -36,7 +36,7 @@ class MyApp extends StatelessWidget {
         primaryColor: Config.primaryColor,
         highlightColor: Colors.transparent,
         splashColor: Colors.transparent,
-        scaffoldBackgroundColor: Config.screenBackColor,
+        scaffoldBackgroundColor: Colors.transparent,
         visualDensity: VisualDensity.adaptivePlatformDensity,
         appBarTheme: AppBarTheme(
           titleTextStyle: Styles.titleBoldStyle,

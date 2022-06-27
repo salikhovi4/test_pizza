@@ -1,4 +1,6 @@
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 class Config {
@@ -16,6 +18,7 @@ class Config {
   static const Color textColor = Color.fromRGBO(57, 62, 70, 1),
     titleColor = Color.fromRGBO(9, 16, 29, 1);
   static double textLargeSize = 26, textMediumSize = 18, textSmallSize = 14;
+  static String groupSeparator = ascii.decode([29]);
 
   ///Durations
   static int animDuration = 250, progressDuration = 500;
@@ -24,7 +27,7 @@ class Config {
   static const Color screenBackColor = Color.fromRGBO(255, 255, 255, 1),
     screenHintColor = Color.fromRGBO(199, 202, 209, 1);
   static double smallBorderRadius = 10, mediumBorderRadius = 16,
-      largeBorderRadius = 24, largePadding = 24, mediumPadding = 16,
+      largeBorderRadius = 100, largePadding = 24, mediumPadding = 16,
       maxBorder = 1000;
   static String backgroundImagePath = 'assets/img/back.png';
 

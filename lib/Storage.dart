@@ -2,7 +2,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Storage {
-  static set(String key, String value) async {
+  static setString(String key, String value) async {
     SharedPreferences sp = await SharedPreferences.getInstance();
     sp.setString(key, value);
   }
@@ -12,7 +12,7 @@ class Storage {
     sp.setInt(name, data);
   }
 
-  static Future<String?> get(String key) async {
+  static Future<String?> getString(String key) async {
     SharedPreferences sp = await SharedPreferences.getInstance();
     return sp.getString(key);
   }
@@ -25,5 +25,15 @@ class Storage {
   static remove(String key) async {
     SharedPreferences sp = await SharedPreferences.getInstance();
     return sp.remove(key);
+  }
+
+  static getKeys() async {
+    SharedPreferences sp = await SharedPreferences.getInstance();
+    return sp.getKeys();
+  }
+
+  static clear() async {
+    SharedPreferences sp = await SharedPreferences.getInstance();
+    sp.clear();
   }
 }
