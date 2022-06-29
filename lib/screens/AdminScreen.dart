@@ -12,7 +12,12 @@ import '../component/GradientButton.dart';
 import '../component/AddPizzaComponent.dart';
 
 class AdminScreen extends StatefulWidget {
-  const AdminScreen({Key? key}) : super(key: key);
+  const AdminScreen({
+    Key? key,
+    required this.updateParentData,
+  }) : super(key: key);
+
+  final Function updateParentData;
 
   @override
   State<AdminScreen> createState() => _AdminScreenState();
@@ -21,13 +26,19 @@ class AdminScreen extends StatefulWidget {
 class _AdminScreenState extends State<AdminScreen> {
   final List<AddPizzaModel> _addingModels = [];
 
+  bool _isLoading = false;
+
   void _addPizza() {
     setState(() {
       _addingModels.add(AddPizzaModel(id: Random().nextInt(1000)));
     });
   }
 
-  void _savePizza() {
+  Future<void> _savePizza() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     bool success = false;
     for (AddPizzaModel item in _addingModels) {
       String name = item.nameController.text;
@@ -35,21 +46,25 @@ class _AdminScreenState extends State<AdminScreen> {
       if (name.trim().isNotEmpty && price.trim().isNotEmpty &&
           double.tryParse(price.trim()) != null) {
         success = true;
-        Storage.setInt(name: name, field: 'id', value: item.id);
-        Storage.setInt(name: name, field: 'count', value: item.count);
-        Storage.setString(name: name, field: 'price', value: price);
-        Storage.setString(name: name, field: 'imagePath', value: item.imagePath);
+        await Storage.setInt(name: name, field: 'id', value: item.id);
+        await Storage.setInt(name: name, field: 'count', value: item.count);
+        await Storage.setString(name: name, field: 'price', value: price);
+        await Storage.setString(name: name, field: 'imagePath', value: item.imagePath);
       }
     }
 
     if (success) {
+      _addingModels.clear();
+
+      setState(() {
+        _isLoading = false;
+      });
+
       showDialog(context: context, builder: (context) => AlertDialog(
         title: Text('Данные успешно сохранены!', style: Styles.textCardStyle,),
       ));
 
-      setState(() {
-        _addingModels.clear();
-      });
+      widget.updateParentData();
     }
   }
 
@@ -141,7 +156,11 @@ class _AdminScreenState extends State<AdminScreen> {
                     ),
                   ),
                 ),
-              )
+              ),
+
+              _isLoading
+                  ? const Center(child: CircularProgressIndicator.adaptive(),)
+                  : const SizedBox()
             ],
           ),
         ),

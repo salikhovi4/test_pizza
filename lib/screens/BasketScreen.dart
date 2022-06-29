@@ -29,6 +29,8 @@ class BasketScreen extends StatefulWidget {
 class _BasketScreenState extends State<BasketScreen> {
   late List<PizzaModel> _basket;
 
+  bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -44,6 +46,10 @@ class _BasketScreenState extends State<BasketScreen> {
   }
 
   Future<void> _makeOrder() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     for (PizzaModel model in _basket) {
       int rest = model.count - model.currentCount;
       if (rest == 0) {
@@ -56,13 +62,15 @@ class _BasketScreenState extends State<BasketScreen> {
       }
     }
 
+    _basket.clear();
+
+    setState(() {
+      _isLoading = false;
+    });
+
     showDialog(context: context, builder: (context) => AlertDialog(
       title: Text('Ваш заказ обрабатывается!', style: Styles.textCardStyle,),
     ));
-
-    _basket.clear();
-
-    setState(() {});
 
     widget.updateParentData();
   }
@@ -203,6 +211,10 @@ class _BasketScreenState extends State<BasketScreen> {
                   ),
                 ),
               ) : const SizedBox(),
+
+              _isLoading
+                  ? const Center(child: CircularProgressIndicator.adaptive(),)
+                  : const SizedBox()
             ],
           ),
         ),

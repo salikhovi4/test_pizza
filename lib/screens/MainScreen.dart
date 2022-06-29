@@ -128,7 +128,9 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                       onPressed: () {
                         Navigator.of(context).push(MaterialPageRoute(
-                          builder: (context) => const AdminScreen(),
+                          builder: (context) => AdminScreen(
+                            updateParentData: initialize,
+                          ),
                         ));
                       },
                     ),),
