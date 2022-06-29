@@ -150,11 +150,10 @@ class _MainScreenState extends State<MainScreen> {
                         return MainPizzaComponent(
                           model: model,
                           addToBasket: () {
-                            if (!_basket.any((element) => element.name == model.name)) {
-                              setState(() {
-                                _basket.add(model);
-                              });
-                            }
+                            _pizzaModels.remove(model);
+                            setState(() {
+                              _basket.add(model);
+                            });
                             navigateToBasketScreen();
                           },
                         );
