@@ -1,15 +1,16 @@
 
+import 'package:badges/badges.dart';
 import 'package:flutter/material.dart';
-import 'package:pizza/Config.dart';
-import 'package:pizza/Storage.dart';
-import 'package:pizza/Styles.dart';
-import 'package:pizza/component/CustomAppBar.dart';
-import 'package:pizza/component/GradientMask.dart';
-import 'package:pizza/component/MainPizzaComponent.dart';
-import 'package:pizza/screens/AdminScreen.dart';
-import 'package:pizza/screens/BasketScreen.dart';
 
+import 'AdminScreen.dart';
+import 'BasketScreen.dart';
+import '../Config.dart';
+import '../Styles.dart';
+import '../Storage.dart';
 import '../model/PizzaModel.dart';
+import '../component/CustomAppBar.dart';
+import '../component/GradientMask.dart';
+import '../component/MainPizzaComponent.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({Key? key}) : super(key: key);
@@ -19,9 +20,9 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  bool isLoading = false;
-  List<PizzaModel> basket = [];
-  List<PizzaModel> pizzaModels = [];
+  final List<PizzaModel> _basket = [];
+
+  List<PizzaModel> _pizzaModels = [];
 
   @override
   void initState() {
@@ -31,12 +32,10 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Future<void> initialize() async {
-    setState(() {
-      isLoading = true;
-    });
-
+    List<PizzaModel> pizzaModels = [];
     Map<String, List<String>> groupedItems = {};
     Set<String> keys = await Storage.getKeys();
+
     for (String key in keys) {
       if (key.contains(Config.groupSeparator)) {
         List<String> nameAndField = key.split(Config.groupSeparator);
@@ -70,8 +69,17 @@ class _MainScreenState extends State<MainScreen> {
     }
 
     setState(() {
-      isLoading = false;
+      _pizzaModels = pizzaModels;
     });
+  }
+
+  void navigateToBasketScreen() {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (context) => BasketScreen(
+        basket: _basket, updateParentState: () {setState(() {});},
+        updateParentData: initialize,
+      ),
+    ),);
   }
 
   @override
@@ -93,16 +101,31 @@ class _MainScreenState extends State<MainScreen> {
                 child: CustomAppBar(
                   title: Text('Pizza Market', style: Styles.titleBoldStyle,),
                   actions: [
-                    GradientMask(child: IconButton(
-                      icon: Icon(Icons.shopping_basket, size: Config.iconSize, color: Colors.white,),
-                      onPressed: () {
-                      },
-                    ),),
+                    Badge(
+                      showBadge: _basket.isNotEmpty,
+                      badgeColor: Config.primaryColor,
+                      badgeContent: Text(
+                        '${_basket.length}', style: Styles.textSmallStyle,
+                      ),
+                      position: _basket.isEmpty
+                          ? null : const BadgePosition(top: -3, end: 3),
+                      child: GradientMask(child: IconButton(
+                        icon: Icon(
+                          Icons.shopping_basket, size: Config.iconSize,
+                          color: Colors.white,
+                        ),
+                        onPressed: () {
+                          navigateToBasketScreen();
+                        },
+                      ),),
+                    ),
 
                     SizedBox(width: Config.largePadding,),
 
                     GradientMask(child: IconButton(
-                      icon: Icon(Icons.person, size: Config.iconSize, color: Colors.white,),
+                      icon: Icon(
+                        Icons.person, size: Config.iconSize, color: Colors.white,
+                      ),
                       onPressed: () {
                         Navigator.of(context).push(MaterialPageRoute(
                           builder: (context) => const AdminScreen(),
@@ -118,21 +141,29 @@ class _MainScreenState extends State<MainScreen> {
                   decoration: const BoxDecoration(
                     color: Config.screenBackColor,
                   ),
-                  child: ListView.separated(
-                    padding: EdgeInsets.all(Config.mediumPadding),
-                    itemBuilder: (context, index) => MainPizzaComponent(
-                      model: pizzaModels[index],
-                      addToBasket: () {
-                        basket.add(pizzaModels[index]);
-                        Navigator.of(context).push(MaterialPageRoute(
-                          builder: (context) => BasketScreen(basket: basket),
-                        ),);
+                  child: RefreshIndicator(
+                    onRefresh: initialize,
+                    child: ListView.separated(
+                      padding: EdgeInsets.all(Config.mediumPadding),
+                      itemBuilder: (context, index) {
+                        final PizzaModel model = _pizzaModels[index];
+                        return MainPizzaComponent(
+                          model: model,
+                          addToBasket: () {
+                            if (!_basket.any((element) => element.name == model.name)) {
+                              setState(() {
+                                _basket.add(model);
+                              });
+                            }
+                            navigateToBasketScreen();
+                          },
+                        );
                       },
+                      separatorBuilder: (context, index) => SizedBox(
+                        height: Config.largePadding,
+                      ),
+                      itemCount: _pizzaModels.length,
                     ),
-                    separatorBuilder: (context, index) => SizedBox(
-                      height: Config.largePadding,
-                    ),
-                    itemCount: pizzaModels.length,
                   ),
                 ),
               ),

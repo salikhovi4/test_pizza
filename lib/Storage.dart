@@ -1,15 +1,21 @@
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'Config.dart';
+
 class Storage {
-  static setString(String key, String value) async {
+  static setString({
+    required String name, required String field, required String value,
+  }) async {
     SharedPreferences sp = await SharedPreferences.getInstance();
-    sp.setString(key, value);
+    sp.setString('$name${Config.groupSeparator}$field', value);
   }
 
-  static setInt(String name, int data) async {
+  static setInt({
+    required String name, required String field, required int value,
+  }) async {
     SharedPreferences sp = await SharedPreferences.getInstance();
-    sp.setInt(name, data);
+    sp.setInt('$name${Config.groupSeparator}$field', value);
   }
 
   static Future<String?> getString(String key) async {
@@ -22,9 +28,9 @@ class Storage {
     return sp.getInt(name);
   }
 
-  static remove(String key) async {
+  static remove(String name, String field) async {
     SharedPreferences sp = await SharedPreferences.getInstance();
-    return sp.remove(key);
+    return sp.remove('$name${Config.groupSeparator}$field');
   }
 
   static getKeys() async {

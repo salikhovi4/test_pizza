@@ -2,14 +2,14 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:pizza/Storage.dart';
-import 'package:pizza/Styles.dart';
-import 'package:pizza/component/CustomAppBar.dart';
-import 'package:pizza/component/GradientButton.dart';
 
 import '../Config.dart';
-import '../component/AddPizzaComponent.dart';
+import '../Styles.dart';
+import '../Storage.dart';
 import '../model/AddPizzaModel.dart';
+import '../component/CustomAppBar.dart';
+import '../component/GradientButton.dart';
+import '../component/AddPizzaComponent.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({Key? key}) : super(key: key);
@@ -35,10 +35,10 @@ class _AdminScreenState extends State<AdminScreen> {
       if (name.trim().isNotEmpty && price.trim().isNotEmpty &&
           double.tryParse(price.trim()) != null) {
         success = true;
-        Storage.setInt('$name${Config.groupSeparator}id', item.id);
-        Storage.setInt('$name${Config.groupSeparator}count', item.count);
-        Storage.setString('$name${Config.groupSeparator}price', price);
-        Storage.setString('$name${Config.groupSeparator}imagePath', item.imagePath);
+        Storage.setInt(name: name, field: 'id', value: item.id);
+        Storage.setInt(name: name, field: 'count', value: item.count);
+        Storage.setString(name: name, field: 'price', value: price);
+        Storage.setString(name: name, field: 'imagePath', value: item.imagePath);
       }
     }
 

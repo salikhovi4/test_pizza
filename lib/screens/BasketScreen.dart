@@ -1,26 +1,72 @@
 
 import 'package:flutter/material.dart';
-import 'package:pizza/component/BasketPizzaComponent.dart';
-import 'package:pizza/model/PizzaModel.dart';
 
 import '../Config.dart';
 import '../Styles.dart';
-import '../component/CustomAppBar.dart';
+import '../Storage.dart';
+import '../model/PizzaModel.dart';
 import '../component/Gradient.dart';
+import '../component/CustomAppBar.dart';
+import '../component/BasketPizzaComponent.dart';
+import '../component/DismissibleComponent.dart';
 
 class BasketScreen extends StatefulWidget {
   const BasketScreen({
     Key? key,
     required this.basket,
+    required this.updateParentData,
+    required this.updateParentState,
   }) : super(key: key);
 
   final List<PizzaModel> basket;
+  final Function updateParentData;
+  final Function updateParentState;
 
   @override
   State<BasketScreen> createState() => _BasketScreenState();
 }
 
 class _BasketScreenState extends State<BasketScreen> {
+  late List<PizzaModel> _basket;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _basket = widget.basket;
+  }
+
+  @override
+  void didUpdateWidget(covariant BasketScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    _basket = widget.basket;
+  }
+
+  Future<void> _makeOrder() async {
+    for (PizzaModel model in _basket) {
+      int rest = model.count - model.currentCount;
+      if (rest == 0) {
+        await Storage.remove(model.name, 'id');
+        await Storage.remove(model.name, 'count');
+        await Storage.remove(model.name, 'price');
+        await Storage.remove(model.name, 'imagePath');
+      } else {
+        await Storage.setInt(name: model.name, field: 'count', value: rest);
+      }
+    }
+
+    showDialog(context: context, builder: (context) => AlertDialog(
+      title: Text('Ваш заказ обрабатывается!', style: Styles.textCardStyle,),
+    ));
+
+    _basket.clear();
+
+    setState(() {});
+
+    widget.updateParentData();
+  }
+
   @override
   Widget build(BuildContext context) {
     double total = 0;
@@ -47,6 +93,7 @@ class _BasketScreenState extends State<BasketScreen> {
                   title: Text('Order details', style: Styles.titleBoldStyle,),
                   leading: GestureDetector(
                     onTap: () {
+                      widget.updateParentState();
                       Navigator.of(context).pop();
                     },
                     child: Image.asset(
@@ -62,23 +109,37 @@ class _BasketScreenState extends State<BasketScreen> {
                   decoration: const BoxDecoration(
                     color: Config.screenBackColor,
                   ),
-                  child: ListView.separated(
+                  child: _basket.isNotEmpty ? ListView.separated(
                     padding: EdgeInsets.all(Config.mediumPadding),
-                    itemBuilder: (context, index) => BasketPizzaComponent(
-                      model: widget.basket[index],
-                      updateParentState: () {
-                        setState(() {});
-                      }
-                    ),
+                    itemBuilder: (context, index) {
+                      PizzaModel model = _basket[index];
+                      return DismissibleComponent(
+                        onDismissed: (DismissDirection direction) {
+                          if (_basket.contains(model)) {
+                            _basket.remove(model);
+                          }
+                          setState(() {});
+                        },
+                        borderRadius: Config.mediumBorderRadius,
+                        child: BasketPizzaComponent(
+                          model: model,
+                          updateParentState: () {
+                            setState(() {});
+                          }
+                        ),
+                      );
+                    },
                     separatorBuilder: (context, index) => SizedBox(
                       height: Config.largePadding,
                     ),
-                    itemCount: widget.basket.length,
+                    itemCount: _basket.length,
+                  ) : Center(
+                    child: Text('Корзина пуста', style: Styles.titleStyle,),
                   ),
                 ),
               ),
 
-              Container(
+              _basket.isNotEmpty ? Container(
                 decoration: const BoxDecoration(
                   color: Config.screenBackColor,
                 ),
@@ -123,7 +184,7 @@ class _BasketScreenState extends State<BasketScreen> {
                             ),
                           ),
                           child: InkWell(
-                            onTap: () {},
+                            onTap: _makeOrder,
                             child: Padding(
                               padding: EdgeInsets.all(Config.mediumPadding),
                               child: SizedBox(
@@ -141,7 +202,7 @@ class _BasketScreenState extends State<BasketScreen> {
                     ),
                   ),
                 ),
-              )
+              ) : const SizedBox(),
             ],
           ),
         ),
