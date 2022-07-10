@@ -1,6 +1,7 @@
 
 import 'package:badges/badges.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'AdminScreen.dart';
 import 'BasketScreen.dart';
@@ -10,6 +11,7 @@ import '../Storage.dart';
 import '../model/PizzaModel.dart';
 import '../component/CustomAppBar.dart';
 import '../component/GradientMask.dart';
+import '../bloc/admin_bloc/admin_bloc.dart';
 import '../component/MainPizzaComponent.dart';
 
 class MainScreen extends StatefulWidget {
@@ -54,8 +56,8 @@ class _MainScreenState extends State<MainScreen> {
         if (valueKey.contains('id')) {
           model.id = (await Storage.getInt(valueKey))!;
         }
-        if (valueKey.contains('count')) {
-          model.count = (await Storage.getInt(valueKey))!;
+        if (valueKey.contains('quantity')) {
+          model.quantity = (await Storage.getInt(valueKey))!;
         }
         if (valueKey.contains('price')) {
           model.price = double.parse((await Storage.getString(valueKey))!);
@@ -128,8 +130,11 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                       onPressed: () {
                         Navigator.of(context).push(MaterialPageRoute(
-                          builder: (context) => AdminScreen(
-                            updateParentData: initialize,
+                          builder: (context) => BlocProvider<AdminBloc>(
+                            create: (context) => AdminBloc(),
+                            child: AdminScreen(
+                              updateParentData: initialize,
+                            ),
                           ),
                         ));
                       },

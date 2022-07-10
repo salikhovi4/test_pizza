@@ -1,7 +1,7 @@
 
 import 'package:flutter/material.dart';
-import 'package:pizza/component/CountControls.dart';
 
+import 'CountControls.dart';
 import '../Config.dart';
 import '../Styles.dart';
 import '../model/PizzaModel.dart';
@@ -46,12 +46,12 @@ class _BasketPizzaComponentState extends State<BasketPizzaComponent> {
   }
 
   void _updateControls() {
-    _isDecrementActive = _model.currentCount > 1;
-    _isIncrementActive = _model.currentCount < _model.count;
+    _isDecrementActive = _model.count > 1;
+    _isIncrementActive = _model.count < _model.quantity;
   }
 
   void _decrement() {
-    _model.currentCount -= 1;
+    _model.count -= 1;
 
     _updateControls();
 
@@ -60,7 +60,7 @@ class _BasketPizzaComponentState extends State<BasketPizzaComponent> {
   }
 
   void _increment() {
-    _model.currentCount += 1;
+    _model.count += 1;
 
     _updateControls();
 
@@ -102,7 +102,7 @@ class _BasketPizzaComponentState extends State<BasketPizzaComponent> {
             ),
 
             CountControls(
-              count: _model.currentCount, decrement: _decrement,
+              count: _model.count, decrement: _decrement,
               increment: _increment, isDecrementActive: _isDecrementActive,
               isIncrementActive: _isIncrementActive,
             )

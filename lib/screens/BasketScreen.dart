@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../Config.dart';
@@ -50,17 +49,21 @@ class _BasketScreenState extends State<BasketScreen> {
       _isLoading = true;
     });
 
-    for (PizzaModel model in _basket) {
-      int rest = model.count - model.currentCount;
-      if (rest == 0) {
-        await Storage.remove(model.name, 'id');
-        await Storage.remove(model.name, 'count');
-        await Storage.remove(model.name, 'price');
-        await Storage.remove(model.name, 'imagePath');
-      } else {
-        await Storage.setInt(name: model.name, field: 'count', value: rest);
+    await Future.delayed(Duration(milliseconds: Config.progressDuration),
+        () async {
+      for (PizzaModel model in _basket) {
+        int rest = model.quantity - model.count;
+        if (rest <= 0) {
+          await Storage.remove(model.name, 'id');
+          await Storage.remove(model.name, 'quantity');
+          await Storage.remove(model.name, 'price');
+          await Storage.remove(model.name, 'imagePath');
+        } else {
+          await Storage.setInt(
+              name: model.name, field: 'quantity', value: rest);
+        }
       }
-    }
+    });
 
     _basket.clear();
 
@@ -68,9 +71,14 @@ class _BasketScreenState extends State<BasketScreen> {
       _isLoading = false;
     });
 
-    showDialog(context: context, builder: (context) => AlertDialog(
-      title: Text('Ваш заказ обрабатывается!', style: Styles.textCardStyle,),
-    ));
+    showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+              title: Text(
+                'Ваш заказ обрабатывается!',
+                style: Styles.textCardStyle,
+              ),
+            ));
 
     widget.updateParentData();
   }
@@ -79,7 +87,7 @@ class _BasketScreenState extends State<BasketScreen> {
   Widget build(BuildContext context) {
     double total = 0;
     for (var element in widget.basket) {
-      total += element.currentCount * element.price;
+      total += element.count * element.price;
     }
 
     return Container(
@@ -90,7 +98,6 @@ class _BasketScreenState extends State<BasketScreen> {
           fit: BoxFit.cover,
         ),
       ),
-
       child: Scaffold(
         body: SafeArea(
           child: Column(
@@ -98,123 +105,138 @@ class _BasketScreenState extends State<BasketScreen> {
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: Config.mediumPadding),
                 child: CustomAppBar(
-                  title: Text('Order details', style: Styles.titleBoldStyle,),
+                  title: Text(
+                    'Order details',
+                    style: Styles.titleBoldStyle,
+                  ),
                   leading: GestureDetector(
                     onTap: () {
                       widget.updateParentState();
                       Navigator.of(context).pop();
                     },
                     child: Image.asset(
-                      'assets/img/arrow_back.png', width: Config.iconSize,
+                      'assets/img/arrow_back.png',
+                      width: Config.iconSize,
                       height: Config.iconSize,
                     ),
                   ),
                 ),
               ),
-
               Expanded(
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Config.screenBackColor,
-                  ),
-                  child: _basket.isNotEmpty ? ListView.separated(
-                    padding: EdgeInsets.all(Config.mediumPadding),
-                    itemBuilder: (context, index) {
-                      PizzaModel model = _basket[index];
-                      return DismissibleComponent(
-                        onDismissed: (DismissDirection direction) {
-                          if (_basket.contains(model)) {
-                            _basket.remove(model);
-                          }
-                          setState(() {});
-                        },
-                        borderRadius: Config.mediumBorderRadius,
-                        child: BasketPizzaComponent(
-                          model: model,
-                          updateParentState: () {
-                            setState(() {});
-                          }
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator.adaptive(),
+                      )
+                    : Container(
+                        decoration: const BoxDecoration(
+                          color: Config.screenBackColor,
                         ),
-                      );
-                    },
-                    separatorBuilder: (context, index) => SizedBox(
-                      height: Config.largePadding,
-                    ),
-                    itemCount: _basket.length,
-                  ) : Center(
-                    child: Text('Корзина пуста', style: Styles.titleStyle,),
-                  ),
-                ),
-              ),
-
-              _basket.isNotEmpty ? Container(
-                decoration: const BoxDecoration(
-                  color: Config.screenBackColor,
-                ),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    vertical: Config.mediumPadding,
-                    horizontal: Config.mediumPadding,
-                  ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: CustomGradient(),
-                      borderRadius: BorderRadius.circular(
-                        Config.mediumBorderRadius,
+                        child: _basket.isNotEmpty
+                            ? ListView.separated(
+                                padding: EdgeInsets.all(Config.mediumPadding),
+                                itemBuilder: (context, index) {
+                                  PizzaModel model = _basket[index];
+                                  return DismissibleComponent(
+                                    onDismissed: (DismissDirection direction) {
+                                      if (_basket.contains(model)) {
+                                        _basket.remove(model);
+                                      }
+                                      setState(() {});
+                                    },
+                                    borderRadius: Config.mediumBorderRadius,
+                                    child: BasketPizzaComponent(
+                                        model: model,
+                                        updateParentState: () {
+                                          setState(() {});
+                                        }),
+                                  );
+                                },
+                                separatorBuilder: (context, index) => SizedBox(
+                                  height: Config.largePadding,
+                                ),
+                                itemCount: _basket.length,
+                              )
+                            : Center(
+                                child: Text(
+                                  'Корзина пуста',
+                                  style: Styles.titleStyle,
+                                ),
+                              ),
                       ),
-                    ),
-                    padding: EdgeInsets.all(Config.largePadding),
-                    child: Column(
-                      children: [
-                        Divider(
-                          color: Config.textColorOnPrimary, thickness: 1,
-                          height: 1,
+              ),
+              _basket.isNotEmpty
+                  ? Container(
+                      decoration: const BoxDecoration(
+                        color: Config.screenBackColor,
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          vertical: Config.mediumPadding,
+                          horizontal: Config.mediumPadding,
                         ),
-
-                        SizedBox(height: Config.mediumPadding / 2,),
-
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: <Widget>[
-                            Text('Total', style: Styles.textSmallStyle,),
-
-                            Text(r'$' '${total.round()}', style: Styles.textMediumStyle,)
-                          ],
-                        ),
-
-                        SizedBox(height: Config.mediumPadding,),
-
-                        Container(
+                        child: Container(
                           decoration: BoxDecoration(
-                            color: Config.screenBackColor,
+                            gradient: CustomGradient(),
                             borderRadius: BorderRadius.circular(
-                              Config.largeBorderRadius,
+                              Config.mediumBorderRadius,
                             ),
                           ),
-                          child: InkWell(
-                            onTap: _makeOrder,
-                            child: Padding(
-                              padding: EdgeInsets.all(Config.mediumPadding),
-                              child: SizedBox(
-                                width: double.infinity,
-                                child: Text(
-                                  'Place my order',
-                                  style: Styles.priceMediumStyle,
-                                  textAlign: TextAlign.center,
+                          padding: EdgeInsets.all(Config.largePadding),
+                          child: Column(
+                            children: [
+                              Divider(
+                                color: Config.textColorOnPrimary,
+                                thickness: 1,
+                                height: 1,
+                              ),
+                              SizedBox(
+                                height: Config.mediumPadding / 2,
+                              ),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: <Widget>[
+                                  Text(
+                                    'Total',
+                                    style: Styles.textSmallStyle,
+                                  ),
+                                  Text(
+                                    r'$' '${total.round()}',
+                                    style: Styles.textMediumStyle,
+                                  )
+                                ],
+                              ),
+                              SizedBox(
+                                height: Config.mediumPadding,
+                              ),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Config.screenBackColor,
+                                  borderRadius: BorderRadius.circular(
+                                    Config.largeBorderRadius,
+                                  ),
+                                ),
+                                child: InkWell(
+                                  onTap: _makeOrder,
+                                  child: Padding(
+                                      padding:
+                                          EdgeInsets.all(Config.mediumPadding),
+                                      child: SizedBox(
+                                        width: double.infinity,
+                                        child: Text(
+                                          'Place my order',
+                                          style: Styles.priceMediumStyle,
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      )),
                                 ),
                               )
-                            ),
+                            ],
                           ),
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-              ) : const SizedBox(),
-
-              _isLoading
-                  ? const Center(child: CircularProgressIndicator.adaptive(),)
-                  : const SizedBox()
+                        ),
+                      ),
+                    )
+                  : const SizedBox(),
             ],
           ),
         ),

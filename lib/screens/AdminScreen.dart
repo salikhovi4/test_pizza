@@ -1,17 +1,16 @@
 
-import 'dart:math';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../Config.dart';
 import '../Styles.dart';
-import '../Storage.dart';
-import '../model/AddPizzaModel.dart';
 import '../component/CustomAppBar.dart';
 import '../component/GradientButton.dart';
+import '../bloc/admin_bloc/admin_bloc.dart';
 import '../component/AddPizzaComponent.dart';
+import '../bloc/pizza_count_bloc/pizza_count_bloc.dart';
 
-class AdminScreen extends StatefulWidget {
+class AdminScreen extends StatelessWidget {
   const AdminScreen({
     Key? key,
     required this.updateParentData,
@@ -19,57 +18,18 @@ class AdminScreen extends StatefulWidget {
 
   final Function updateParentData;
 
-  @override
-  State<AdminScreen> createState() => _AdminScreenState();
-}
-
-class _AdminScreenState extends State<AdminScreen> {
-  final List<AddPizzaModel> _addingModels = [];
-
-  bool _isLoading = false;
-
-  void _addPizza() {
-    setState(() {
-      _addingModels.add(AddPizzaModel(id: Random().nextInt(1000)));
-    });
+  void _addPizza(AdminBloc adminBloc) {
+    adminBloc.add(AddNewPizza());
   }
 
-  Future<void> _savePizza() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    bool success = false;
-    for (AddPizzaModel item in _addingModels) {
-      String name = item.nameController.text;
-      String price = item.priceController.text;
-      if (name.trim().isNotEmpty && price.trim().isNotEmpty &&
-          double.tryParse(price.trim()) != null) {
-        success = true;
-        await Storage.setInt(name: name, field: 'id', value: item.id);
-        await Storage.setInt(name: name, field: 'count', value: item.count);
-        await Storage.setString(name: name, field: 'price', value: price);
-        await Storage.setString(name: name, field: 'imagePath', value: item.imagePath);
-      }
-    }
-
-    if (success) {
-      _addingModels.clear();
-
-      setState(() {
-        _isLoading = false;
-      });
-
-      showDialog(context: context, builder: (context) => AlertDialog(
-        title: Text('Данные успешно сохранены!', style: Styles.textCardStyle,),
-      ));
-
-      widget.updateParentData();
-    }
+  void _savePizza(AdminBloc adminBloc) {
+    adminBloc.add(SavePizza());
   }
 
   @override
   Widget build(BuildContext context) {
+    final AdminBloc adminBloc = context.read<AdminBloc>();
+    final List<Map<String, dynamic>> pizzaModels = adminBloc.pizzaModels;
     return Container(
       constraints: const BoxConstraints.expand(),
       decoration: BoxDecoration(
@@ -98,7 +58,9 @@ class _AdminScreenState extends State<AdminScreen> {
                   ),
                   actions: [
                     GradientButton(
-                      onPressed: _addPizza,
+                      onPressed: () {
+                        _addPizza(adminBloc);
+                      },
                       child: SizedBox(
                         width: Config.iconSize, height: Config.iconSize,
                         child: Center(
@@ -114,53 +76,103 @@ class _AdminScreenState extends State<AdminScreen> {
               ),
 
               Expanded(
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Config.screenBackColor,
-                  ),
-                  child: ListView.separated(
-                    padding: EdgeInsets.all(Config.mediumPadding),
-                    itemBuilder: (context, index) => AddPizzaComponent(
-                      model: _addingModels[index],
-                    ),
-                    separatorBuilder: (context, index) => SizedBox(
-                      height: Config.largePadding,
-                    ),
-                    itemCount: _addingModels.length,
-                  ),
-                ),
-              ),
-
-              Visibility(
-                visible: _addingModels.isNotEmpty,
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Config.screenBackColor,
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      vertical: Config.mediumPadding, horizontal: Config.mediumPadding,
-                    ),
-                    child: GradientButton(
-                      borderRadius: Config.mediumBorderRadius,
-                      onPressed: _savePizza,
-                      child: Padding(
-                        padding: EdgeInsets.all(Config.largePadding),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text('Save', style: Styles.saveButtonStyle,),
-                          ],
-                        ),
+                child: BlocBuilder<AdminBloc, AdminState>(
+                builder: (context, state) {
+                  if (state is AdminLoading) {
+                    return const Center(
+                      child: CircularProgressIndicator.adaptive(
+                        backgroundColor: Config.screenBackColor,
                       ),
-                    ),
-                  ),
-                ),
+                    );
+                  } else {
+                    return Column(
+                      children: <Widget>[
+                        Expanded(
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              color: Config.screenBackColor,
+                            ),
+                            child: ListView.separated(
+                              itemCount: pizzaModels.length,
+                              padding: EdgeInsets.all(Config.mediumPadding),
+                              itemBuilder: (context, index) {
+                                final Map<String, dynamic> item = pizzaModels[index];
+                                return BlocProvider<PizzaCountBloc>(
+                                  create: (context) => PizzaCountBloc(
+                                    count: item['model'].count,
+                                  ),
+                                  child: AddPizzaComponent(
+                                    model: item['model'],
+                                    nameController: item['name'],
+                                    priceController: item['price'],
+                                  ),
+                                );
+                              },
+                              separatorBuilder: (context, index) => SizedBox(
+                                height: Config.largePadding,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        Visibility(
+                          visible: adminBloc.isSaveActive,
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              color: Config.screenBackColor,
+                            ),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                vertical: Config.mediumPadding,
+                                horizontal: Config.mediumPadding,
+                              ),
+                              child: GradientButton(
+                                borderRadius: Config.mediumBorderRadius,
+                                onPressed: () {
+                                  _savePizza(adminBloc);
+                                },
+                                child: Padding(
+                                  padding: EdgeInsets.all(Config.largePadding),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text('Save', style: Styles.saveButtonStyle,),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+                },),
               ),
 
-              _isLoading
-                  ? const Center(child: CircularProgressIndicator.adaptive(),)
-                  : const SizedBox()
+              BlocBuilder<AdminBloc, AdminState>(builder: (context, state) {
+                if (state is AdminSuccess) {
+                  WidgetsBinding.instance!.addPostFrameCallback((timeStamp) =>
+                    showDialog(context: context, builder: (context) => AlertDialog(
+                      title: Text(
+                        'Данные успешно сохранены!',
+                        style: Styles.textCardStyle,
+                      ),
+                    ),),
+                  );
+                } else if (state is AdminError) {
+                  WidgetsBinding.instance!.addPostFrameCallback((timeStamp) =>
+                    showDialog(context: context, builder: (context) => AlertDialog(
+                      title: Text(
+                        'Произошла ошибка при сохранении данных',
+                        style: Styles.textCardStyle,
+                      ),
+                    ),),
+                  );
+                }
+
+                return const SizedBox.shrink();
+              }),
             ],
           ),
         ),
